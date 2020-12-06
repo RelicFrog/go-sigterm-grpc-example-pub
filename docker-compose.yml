@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  # api_bastion:
+  #   image: rf-example-sys-bastion:1.0.0
+  #   container_name: rf-example-sys-bastion
+  #   networks:
+  #     - backend
+  #     - frontend
+  #   labels:
+  #     - "com.aribor.poc.type=bastion"
+  #     - "com.aribor.poc.category=ssh"
+  #     - "com.aribor.poc.department=dev "
+
+  api_example_proxy_envoy:
+    image: rf-example-grpc-envoy:1.0.0
+    container_name: rf-example-sys-envoy
+    ports:
+      - "8080:8080"
+      - "9901:9901"
+    networks:
+      - backend
+      - frontend
+    labels:
+      - "com.aribor.poc.type=proxy"
+      - "com.aribor.poc.category=grpc"
+      - "com.aribor.poc.department=dev"
+
+  api_example_user_mongodb:
+    image: bitnami/mongodb:4.4.1
+    container_name: rf-example-sys-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    env_file:
+      - src/sys_mongodb/.env
+    networks:
+      - backend
+    labels:
+      - "com.aribor.poc.type=database"
+      - "com.aribor.poc.category=nosql"
+      - "com.aribor.poc.department=dev"
+
+  api_example_user_invite_codes:
+    image: rf-example-grpc-user-invite-code:1.0.0
+    container_name: rf-example-grpc-user-invite-code
+    ports:
+      - "50051:50051"
+    depends_on:
+      - api_example_proxy_envoy
+      - api_example_user_mongodb
+    env_file:
+      - src/api_usr_invite/.env
+    networks:
+      - backend
+    labels:
+      - "com.aribor.poc.type=api"
+      - "com.aribor.poc.category=grpc"
+      - "com.aribor.poc.department=dev"
+
+networks:
+  backend:
+  frontend:
+
+volumes:
+  db-data:

@@ -1,0 +1,12 @@
+{
+  "project": {
+    "name": "api-usr-invite",
+    "name_long": "rf-example-api-usr-invite",
+    "namespace": "rf",
+    "description": "this service will provide a gRPC api for handling invitation codes",
+    "unit": "core",
+    "version": "1.0.0",
+    "packages_req": "jq zip pass docker",
+    "unsupported_os": "WIN32"
+  }
+}
