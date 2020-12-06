@@ -45,14 +45,14 @@ static_resources:
                     runtime_key: cors.www.enabled
 
                 routes:
-                  - match: { prefix: /stub-a }
+                  - match: { prefix: /stub/usr-invite-codes }
                     route:
                       cluster: c_grpc_user_invite_codes
                       max_grpc_timeout: 0s
                       idle_timeout: 15.0s
                       regex_rewrite:
                         pattern:
-                          regex: ^/stub-a[/]*(.*)$
+                          regex: ^/stub/usr-invite-codes[/]*(.*)$
                           google_re2: { }
                         substitution: /\1
 
@@ -81,7 +81,7 @@ static_resources:
       cluster_name: c_grpc_user_invite_codes
       endpoints:
       - lb_endpoints:
-          - endpoint: { address: { socket_address: { address: aribor-api-grpc-user-invite-code, port_value: 50051 }}}
+          - endpoint: { address: { socket_address: { address: rf-example-grpc-user-invite-code, port_value: 50051 }}}
 
 layered_runtime:
   layers:

@@ -1,17 +1,6 @@
 version: "3.8"
 
 services:
-  # api_bastion:
-  #   image: rf-example-sys-bastion:1.0.0
-  #   container_name: rf-example-sys-bastion
-  #   networks:
-  #     - backend
-  #     - frontend
-  #   labels:
-  #     - "com.aribor.poc.type=bastion"
-  #     - "com.aribor.poc.category=ssh"
-  #     - "com.aribor.poc.department=dev "
-
   api_example_proxy_envoy:
     image: rf-example-grpc-envoy:1.0.0
     container_name: rf-example-sys-envoy
@@ -32,7 +21,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/bitnami/mongodb
     env_file:
       - src/sys_mongodb/.env
     networks:
@@ -58,6 +47,17 @@ services:
       - "com.aribor.poc.type=api"
       - "com.aribor.poc.category=grpc"
       - "com.aribor.poc.department=dev"
+
+  # api_bastion:
+  #   image: rf-example-sys-bastion:1.0.0
+  #   container_name: rf-example-sys-bastion
+  #   networks:
+  #     - backend
+  #     - frontend
+  #   labels:
+  #     - "com.aribor.poc.type=bastion"
+  #     - "com.aribor.poc.category=ssh"
+  #     - "com.aribor.poc.department=dev "
 
 networks:
   backend:
