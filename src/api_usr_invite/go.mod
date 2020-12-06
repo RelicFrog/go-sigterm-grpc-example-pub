@@ -3,8 +3,6 @@ module api_usr_invite/server
 go 1.15
 
 require (
-	github.com/RelicFrog/go-lib-aribor-sys v1.0.4
-	github.com/RelicFrog/go-lib-aribor-tlp v1.0.0 // indirect
 	github.com/RelicFrog/go-lib-pub-tlp v0.0.0-20201206103524-b4c126eef633
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.2 // indirect
