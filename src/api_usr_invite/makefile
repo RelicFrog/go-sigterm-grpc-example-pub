@@ -8,7 +8,7 @@
 # @author: Patrick Paechnatz <post@dunkelfrosch.com>
 # @version: 1.0.0 <alpha>
 # @createdAt: 2020-11-12
-# @updatedAt: 2020-11-16
+# @updatedAt: 2020-12-06
 # ---------------------------------------------------------------------------------------------------------------------
 
 define GetFromConfigByCategory
@@ -131,7 +131,7 @@ makefile-init:
 			exit 1 ;\
 		fi ;\
 		if [[ ! -a $(RAND_FILE) ]] ; then \
-			echo $$RANDOM > $(RAND_FILE) ;\
+			echo $$(openssl rand -hex 4) > $(RAND_FILE) ;\
 		fi ;\
 		PROJECT_RANDOM_ID=`cat $(RAND_FILE)` ;\
 		PROJECT_RANDOM_TOKEN=$$OS_IDENT-$(PROJECT_TIME_CURRENT)-$$PROJECT_RANDOM_ID ;\
@@ -247,7 +247,7 @@ go-get:
 go-install:
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFILES)
 
-go-test:
+go-test: go-get
 	@echo " *** Running all service related tests ..."
 	./build/do_tests.sh
 

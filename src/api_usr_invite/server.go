@@ -23,6 +23,7 @@ import (
 	"fmt"
 	rftlp "github.com/RelicFrog/go-lib-pub-tlp"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/joho/godotenv"
 	"github.com/oklog/ulid/v2"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -89,7 +90,7 @@ func init() {
 
 	log = logrus.New()
 	log.Level = logrus.DebugLevel
-	if metaDebugMode := rfcommon.GetDotEnvVariable("DISABLE_DEBUG",metaEnvFile); metaDebugMode == "1" {
+	if metaDebugMode := _getDotEnvVariable("DISABLE_DEBUG",metaEnvFile); metaDebugMode == "1" {
 		log.Level = logrus.ErrorLevel
 	}
 
@@ -106,33 +107,33 @@ func init() {
 	// -- define config bound mechanics (using .env) --
 	//
 
-	if metaTracerDisabled := rfcommon.GetDotEnvVariable("DISABLE_TRACING",metaEnvFile); metaTracerDisabled == "0" {
+	if metaTracerDisabled := _getDotEnvVariable("DISABLE_TRACING",metaEnvFile); metaTracerDisabled == "0" {
 		log.Infof("%s: tracing enabled.",metaServiceName)
-		go rftlp.InitTracing(metaServiceName, rfcommon.GetDotEnvVariable("JAEGER_SERVICE_ADDR",metaEnvFile), log)
+		go rftlp.InitTracing(metaServiceName, _getDotEnvVariable("JAEGER_SERVICE_ADDR",metaEnvFile), log)
 	}
 
-	if metaProfilerDisabled := rfcommon.GetDotEnvVariable("DISABLE_PROFILER",metaEnvFile); metaProfilerDisabled == "0" {
+	if metaProfilerDisabled := _getDotEnvVariable("DISABLE_PROFILER",metaEnvFile); metaProfilerDisabled == "0" {
 		log.Infof("%s: profiling enabled.",metaServiceName)
 		go rftlp.InitProfiling(metaServiceName, metaServiceVersion, log)
 	}
 
-	if metaMongoDbUsr = rfcommon.GetDotEnvVariable("DB_MONGO_USR",metaEnvFile); metaMongoDbUsr == "" {
+	if metaMongoDbUsr = _getDotEnvVariable("DB_MONGO_USR",metaEnvFile); metaMongoDbUsr == "" {
 		log.Fatalf("%s: mongoDB-Service-User not set <exit>",metaServiceName)
 	}
 
-	if metaMongoDbPwd = rfcommon.GetDotEnvVariable("DB_MONGO_PWD",metaEnvFile); metaMongoDbPwd == "" {
+	if metaMongoDbPwd = _getDotEnvVariable("DB_MONGO_PWD",metaEnvFile); metaMongoDbPwd == "" {
 		log.Fatalf("%s: mongoDB-Password not set <exit>",metaServiceName)
 	}
 
-	if metaMongoDbPDB = rfcommon.GetDotEnvVariable("DB_MONGO_PDB",metaEnvFile); metaMongoDbPDB == "" {
+	if metaMongoDbPDB = _getDotEnvVariable("DB_MONGO_PDB",metaEnvFile); metaMongoDbPDB == "" {
 		log.Fatalf("%s: mongoDB primary service db not found <exit>",metaServiceName)
 	}
 
-	if metaMongoDbLnk = rfcommon.GetDotEnvVariable("DB_MONGO_LNK",metaEnvFile); metaMongoDbLnk == "" {
+	if metaMongoDbLnk = _getDotEnvVariable("DB_MONGO_LNK",metaEnvFile); metaMongoDbLnk == "" {
 		log.Fatalf("%s: mongoDB connection link not found <exit>",metaServiceName)
 	}
 
-	if metaServicePort = rfcommon.GetDotEnvVariable("PORT",metaEnvFile); metaServicePort == "" {
+	if metaServicePort = _getDotEnvVariable("PORT",metaEnvFile); metaServicePort == "" {
 		log.Fatalf("%s: service port definition missing <exit>",metaServiceName)
 	}
 }
@@ -183,7 +184,7 @@ func run(port string) string {
 	if err != nil { log.Fatal(err) }
 
 	var srv *grpc.Server
-	if metaGRPCStatsDisabled := rfcommon.GetDotEnvVariable("DISABLE_STATS",metaEnvFile); metaGRPCStatsDisabled == "0" {
+	if metaGRPCStatsDisabled := _getDotEnvVariable("DISABLE_STATS",metaEnvFile); metaGRPCStatsDisabled == "0" {
 		log.Infof("%s: gRPC stats enabled.",metaServiceName)
 		srv = grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	} else {
@@ -193,8 +194,7 @@ func run(port string) string {
 	userInviteCodeSVC := &UserInviteCodeServiceServer{}
 	rfpb.RegisterUserInviteCodeServiceServer(srv, userInviteCodeSVC)
 	rfpbh.RegisterHealthServer(srv, userInviteCodeSVC)
-	// activate reflections (for cli debugging purpose)
-	reflection.Register(srv)
+	reflection.Register(srv) // activate reflections for grpc
 
 	go srv.Serve(l)
 
@@ -616,4 +616,27 @@ func _getBSONFilterByRequest(req *rfpb.ListFilteredInviteCodeReq) *bson.M {
 	}
 
 	return dataFilter
+}
+
+//
+// -- sidekick stack for env related helper methods
+//
+
+func _getDotEnvVariable(key string, file ...string) string {
+
+	envFile := ".env"
+	if len(file) > 0 {
+		envFile = file[0]
+	}
+
+	if err := godotenv.Load(envFile) ; err != nil {
+		log.Fatalf("common: error loading local [.%s] file",file)
+	}
+
+	return os.Getenv(key)
+}
+
+func _getEnvVariable(key string) string {
+
+	return os.Getenv(key)
 }
