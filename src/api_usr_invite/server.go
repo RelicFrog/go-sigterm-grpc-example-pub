@@ -53,15 +53,15 @@ const (
 
 var (
 	log *logrus.Logger
-	metaMongoDbUsr  string
-	metaMongoDbPwd  string
-	metaMongoDbLnk  string
-	metaMongoDbPDB  string
+	metaMongoDbUsr string
+	metaMongoDbPwd string
+	metaMongoDbLnk string
+	metaMongoDbPDB string
     metaMongoDbClient *mongo.Client
 	metaMongoDbCollection *mongo.Collection
 	metaMongoDbContext = context.Background()
-	metaEnvFile = ".env"
 	metaServicePort string
+	extraLatency time.Duration
     err error
 )
 
@@ -90,7 +90,7 @@ func init() {
 
 	log = logrus.New()
 	log.Level = logrus.DebugLevel
-	if metaDebugMode := _getDotEnvVariable("DISABLE_DEBUG",metaEnvFile); metaDebugMode == "1" {
+	if metaDebugMode := _getDotEnvVariable("DISABLE_DEBUG"); metaDebugMode == "1" {
 		log.Level = logrus.ErrorLevel
 	}
 
@@ -107,33 +107,33 @@ func init() {
 	// -- define config bound mechanics (using .env) --
 	//
 
-	if metaTracerDisabled := _getDotEnvVariable("DISABLE_TRACING",metaEnvFile); metaTracerDisabled == "0" {
+	if metaTracerDisabled := _getDotEnvVariable("DISABLE_TRACING"); metaTracerDisabled == "0" {
 		log.Infof("%s: tracing enabled.",metaServiceName)
-		go rftlp.InitTracing(metaServiceName, _getDotEnvVariable("JAEGER_SERVICE_ADDR",metaEnvFile), log)
+		go rftlp.InitTracing(metaServiceName, _getDotEnvVariable("JAEGER_SERVICE_ADDR"), log)
 	}
 
-	if metaProfilerDisabled := _getDotEnvVariable("DISABLE_PROFILER",metaEnvFile); metaProfilerDisabled == "0" {
+	if metaProfilerDisabled := _getDotEnvVariable("DISABLE_PROFILER"); metaProfilerDisabled == "0" {
 		log.Infof("%s: profiling enabled.",metaServiceName)
 		go rftlp.InitProfiling(metaServiceName, metaServiceVersion, log)
 	}
 
-	if metaMongoDbUsr = _getDotEnvVariable("DB_MONGO_USR",metaEnvFile); metaMongoDbUsr == "" {
+	if metaMongoDbUsr = _getDotEnvVariable("DB_MONGO_USR"); metaMongoDbUsr == "" {
 		log.Fatalf("%s: mongoDB-Service-User not set <exit>",metaServiceName)
 	}
 
-	if metaMongoDbPwd = _getDotEnvVariable("DB_MONGO_PWD",metaEnvFile); metaMongoDbPwd == "" {
+	if metaMongoDbPwd = _getDotEnvVariable("DB_MONGO_PWD"); metaMongoDbPwd == "" {
 		log.Fatalf("%s: mongoDB-Password not set <exit>",metaServiceName)
 	}
 
-	if metaMongoDbPDB = _getDotEnvVariable("DB_MONGO_PDB",metaEnvFile); metaMongoDbPDB == "" {
+	if metaMongoDbPDB = _getDotEnvVariable("DB_MONGO_PDB"); metaMongoDbPDB == "" {
 		log.Fatalf("%s: mongoDB primary service db not found <exit>",metaServiceName)
 	}
 
-	if metaMongoDbLnk = _getDotEnvVariable("DB_MONGO_LNK",metaEnvFile); metaMongoDbLnk == "" {
+	if metaMongoDbLnk = _getDotEnvVariable("DB_MONGO_LNK"); metaMongoDbLnk == "" {
 		log.Fatalf("%s: mongoDB connection link not found <exit>",metaServiceName)
 	}
 
-	if metaServicePort = _getDotEnvVariable("PORT",metaEnvFile); metaServicePort == "" {
+	if metaServicePort = _getDotEnvVariable("PORT"); metaServicePort == "" {
 		log.Fatalf("%s: service port definition missing <exit>",metaServiceName)
 	}
 }
@@ -149,7 +149,7 @@ func main() {
 	mongoDbInitCon()
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs,syscall.SIGINT,syscall.SIGTERM,syscall.SIGABRT,syscall.SIGUSR1)
+	signal.Notify(sigs,syscall.SIGINT,syscall.SIGTERM,syscall.SIGABRT,syscall.SIGUSR1,syscall.SIGUSR2)
 	go func() {
 
 		for {
@@ -164,13 +164,28 @@ func main() {
 				os.Exit(0)
 			}
 
-			// handle (internal) fixture load signal (notify on syscall.USR1)
+			// handle fixture load / db seeding signal (notify on syscall.USR1)
 			if sig == syscall.SIGUSR1 {
 				log.Infof("%s: handle seed database signal [%s] ...",metaServiceName,sig.String())
-
 				if err := mongoDbFixtureCreateIndexes(); err != nil { mongoDbFixtureHandleFatal(err) }
 				if err := mongoDbFixtureLoadInviteCodes(); err != nil { mongoDbFixtureHandleFatal(err) }
 			}
+
+			// handle extra latency signal (notify on syscall.USR2)
+			if sig == syscall.SIGUSR2 {
+				log.Infof("%s: handle extra latency signal [%s] ...",metaServiceName,sig.String())
+				// check inactive state (switch latency flag)
+				if  extraLatency == time.Duration(0) {
+					extraLatency = time.Duration(rand.Int63n(1750))*time.Millisecond
+					log.Infof("%s: extra latency enabled (duration: %v) ...",metaServiceName,extraLatency)
+				} else {
+					extraLatency = time.Duration(0)
+					log.Infof("%s: extra latency disabled (duration: %v) ...",metaServiceName,extraLatency)
+				}
+			}
+
+			// handle reload config signal (notify on syscall.SIGHUP)
+			// *** not implemented yet ***
 		}
 	}()
 
@@ -184,7 +199,7 @@ func run(port string) string {
 	if err != nil { log.Fatal(err) }
 
 	var srv *grpc.Server
-	if metaGRPCStatsDisabled := _getDotEnvVariable("DISABLE_STATS",metaEnvFile); metaGRPCStatsDisabled == "0" {
+	if metaGRPCStatsDisabled := _getDotEnvVariable("DISABLE_STATS"); metaGRPCStatsDisabled == "0" {
 		log.Infof("%s: gRPC stats enabled.",metaServiceName)
 		srv = grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	} else {
