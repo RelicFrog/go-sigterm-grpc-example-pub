@@ -21,7 +21,6 @@ import (
 	rfpb "api_usr_invite/server/proto"
 	"context"
 	"fmt"
-	rfcommon "github.com/RelicFrog/go-lib-aribor-sys"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
@@ -85,27 +84,27 @@ func TestMain(m *testing.M) {
 
 func setup() {
 
-	if metaMongoDbUsr = rfcommon.GetDotEnvVariable("DB_MONGO_USR"); metaMongoDbUsr == "" {
+	if metaMongoDbUsr = _getDotEnvVariable("DB_MONGO_USR"); metaMongoDbUsr == "" {
 		fmt.Printf("%s: mongoDB-Service-User not set <exit>",metaTestScope)
 		os.Exit(1)
 	}
 
-	if metaMongoDbPwd = rfcommon.GetDotEnvVariable("DB_MONGO_PWD"); metaMongoDbPwd == "" {
+	if metaMongoDbPwd = _getDotEnvVariable("DB_MONGO_PWD"); metaMongoDbPwd == "" {
 		fmt.Printf("%s: mongoDB-Password not set <exit>",metaTestScope)
 		os.Exit(1)
 	}
 
-	if metaMongoDbPDB = rfcommon.GetDotEnvVariable("DB_MONGO_PDB"); metaMongoDbPDB == "" {
+	if metaMongoDbPDB = _getDotEnvVariable("DB_MONGO_PDB"); metaMongoDbPDB == "" {
 		fmt.Printf("%s: mongoDB primary service db not found <exit>",metaTestScope)
 		os.Exit(1)
 	}
 
-	if metaMongoDbLnk = rfcommon.GetDotEnvVariable("DB_MONGO_LNK"); metaMongoDbLnk == "" {
+	if metaMongoDbLnk = _getDotEnvVariable("DB_MONGO_LNK"); metaMongoDbLnk == "" {
 		fmt.Printf("%s: mongoDB connection link not found <exit>",metaTestScope)
 		os.Exit(1)
 	}
 
-	if metaServicePort = rfcommon.GetDotEnvVariable("PORT"); metaServicePort == "" {
+	if metaServicePort = _getDotEnvVariable("PORT"); metaServicePort == "" {
 		fmt.Printf("%s: service port definition missing <exit>",metaTestScope)
 		os.Exit(1)
 	}

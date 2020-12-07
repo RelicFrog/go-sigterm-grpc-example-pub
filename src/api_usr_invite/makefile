@@ -1,8 +1,8 @@
 #!make
 # ---------------------------------------------------------------------------------------------------------------------
-# MAKEFILE for GoLang gRPC Service Stack (project aribor)
+# MAKEFILE for GoLang gRPC Service Stack (just an example project)
 # ---------------------------------------------------------------------------------------------------------------------
-# @purpose: base commands for handling service provisioning in aribor
+# @purpose: base commands for handling corresponding service provisioning
 # @info: please configure/setup your makefile.json first!
 # ---------------------------------------------------------------------------------------------------------------------
 # @author: Patrick Paechnatz <post@dunkelfrosch.com>
@@ -52,20 +52,10 @@ PROJECT_RANDOM_ID:="0"
 PROJECT_BUILD_VERSION:=$(shell git describe --tags --always)
 PROJECT_BUILD_HASH:=$(shell git rev-parse --short HEAD)
 PROJECT_BUILD_NAME:=$(shell basename "$(PWD)")
-
-# -- golang related variables (old)
-# GOBASE:=$(shell pwd)
-# GOPATH:=$(GOBASE)/vendor:$(GOBASE)
-# GOBIN:=$(GOBASE)/bin
-# GOBASE_GLOBAL:=$$HOME/go
-# GOPATH_GLOBAL:=$(GOBASE_GLOBAL)/vendor:$(GOBASE_GLOBAL)
-# GOBIN_GLOBAL:=$(GOBASE_GLOBAL)/bin
-
 # -- golang related variables (new)
 GO111MODULE=on
 GOPATH=$$HOME/go
 GOBIN=$(GOPATH)/bin
-
 GOFILES:=$(wildcard *.go)
 LDFLAGS=-ldflags "-X=main.Version=$(PROJECT_BUILD_VERSION) -X=main.Build=$(PROJECT_BUILD_HASH)"
 STDERR:=/tmp/.$(PROJECT_BUILD_NAME)-stderr.txt
