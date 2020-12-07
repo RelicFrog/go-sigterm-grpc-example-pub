@@ -650,8 +650,3 @@ func _getDotEnvVariable(key string, file ...string) string {
 
 	return os.Getenv(key)
 }
-
-func _getEnvVariable(key string) string {
-
-	return os.Getenv(key)
-}
