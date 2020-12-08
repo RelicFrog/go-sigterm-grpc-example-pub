@@ -236,10 +236,13 @@ func (u UserInviteCodeServiceServer) Watch(_ *rfpbh.HealthCheckRequest, _ rfpbh.
 
 func (u UserInviteCodeServiceServer) GetVersion(_ context.Context, _ *rfpb.VersionReq) (*rfpb.VersionRes, error) {
 
+	_handleSimLoadLatency()
 	return &rfpb.VersionRes{Version: fmt.Sprintf("v%s", metaServiceVersion)}, nil
 }
 
 func (u UserInviteCodeServiceServer) CreateInviteCode(_ context.Context, req *rfpb.CreateInviteCodeReq) (*rfpb.CreateInviteCodeRes, error) {
+
+	_handleSimLoadLatency()
 
 	// essentially doing req.GetInviteCode to access the struct with a nil check
 	metaCode := req.GetInviteCode()
@@ -271,6 +274,8 @@ func (u UserInviteCodeServiceServer) CreateInviteCode(_ context.Context, req *rf
 }
 
 func (u UserInviteCodeServiceServer) GetInviteCode(_ context.Context, req *rfpb.GetInviteCodeReq) (*rfpb.GetInviteCodeRes, error) {
+
+	_handleSimLoadLatency()
 
 	// convert string id (from proto) to mongoDB ObjectId
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
@@ -310,6 +315,8 @@ func (u UserInviteCodeServiceServer) GetInviteCode(_ context.Context, req *rfpb.
 
 func (u UserInviteCodeServiceServer) DeleteInviteCode(_ context.Context, req *rfpb.DeleteInviteCodeReq) (*rfpb.DeleteInviteCodeRes, error) {
 
+	_handleSimLoadLatency()
+
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
 		log.Warnf("%s: mongodb: unable to convert object-id to document-id",metaServiceName)
@@ -335,6 +342,8 @@ func (u UserInviteCodeServiceServer) DeleteInviteCode(_ context.Context, req *rf
 }
 
 func (u UserInviteCodeServiceServer) UpdateInviteCode(_ context.Context, req *rfpb.UpdateInviteCodeReq) (*rfpb.UpdateInviteCodeRes, error) {
+
+	_handleSimLoadLatency()
 
 	metaCode := req.GetInviteCode()
 	oid, err := primitive.ObjectIDFromHex(metaCode.GetId())
@@ -376,6 +385,8 @@ func (u UserInviteCodeServiceServer) UpdateInviteCode(_ context.Context, req *rf
 
 func (u UserInviteCodeServiceServer) ListInviteCodes(_ *rfpb.ListInviteCodeReq, stream rfpb.UserInviteCodeService_ListInviteCodesServer) error {
 
+	_handleSimLoadLatency()
+
 	data := &UserInviteCode{}
 	cursor, err := metaMongoDbCollection.Find(metaMongoDbContext, bson.M{"is_deleted": false})
 	if err != nil {
@@ -411,6 +422,8 @@ func (u UserInviteCodeServiceServer) ListInviteCodes(_ *rfpb.ListInviteCodeReq, 
 }
 
 func (u UserInviteCodeServiceServer) ListFilteredInviteCodes(req *rfpb.ListFilteredInviteCodeReq, stream rfpb.UserInviteCodeService_ListFilteredInviteCodesServer) error {
+
+	_handleSimLoadLatency()
 
 	data := &UserInviteCode{}
 	cursor, err := metaMongoDbCollection.Find(metaMongoDbContext, _getBSONFilterByRequest(req))
@@ -649,4 +662,18 @@ func _getDotEnvVariable(key string, file ...string) string {
 	}
 
 	return os.Getenv(key)
+}
+
+//
+// -- sidekick stack for load-test helper methods
+//
+func _handleSimLoadLatency() bool {
+
+	if  extraLatency == time.Duration(0) {
+		return false
+	}
+
+	time.Sleep(extraLatency)
+
+	return true
 }
