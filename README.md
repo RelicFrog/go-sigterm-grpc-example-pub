@@ -14,8 +14,8 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
 
 | Service                                              | Language      | Description                                                                                                                       |
 | ---------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [app_frontend](./src/app_frontend)                   | Go            | Exposes an HTTP server to serve the frontend website.                                                                             |
-| [app_backend](./src/app_backend)                     | Go            | Exposes an HTTP server to serve the backend website.                                                                              |
+| [app_frontend](./src/app_frontend)                   | Go            | Exposes an HTTP server to serve the frontend website (_not implemented yet_).                                                     |
+| [app_backend](./src/app_backend)                     | Go            | Exposes an HTTP server to serve the backend website (_not implemented yet_).                                                      |
 | [api_usr_invite](./src/api_usr_invite)               | Go            | Provide a gRPC service the handle user invite codes for our upcoming user registration process                                    |
 
 ## Installation

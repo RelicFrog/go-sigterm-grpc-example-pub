@@ -19,6 +19,7 @@ services:
       - "com.aribor.poc.department=dev"
 
   api_example_user_invite_codes:
+    build: ./src/api_usr_invite
     image: rf-example-grpc-user-invite-code:1.0.0
     container_name: rf-example-grpc-user-invite-code
     ports:
