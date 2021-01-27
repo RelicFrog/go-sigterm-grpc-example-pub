@@ -77,3 +77,7 @@ data/*
 *.dmp
 *.out
 *.tmp
+
+# ignore all gcp credential keys
+# --
+**/credentials.json
