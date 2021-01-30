@@ -1,0 +1,130 @@
+# Copyright 2020 Team RelicFrog
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# *** ALPHA-Code-Definition    ***
+# *** not ready for production ***
+#
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc-claim-grpc-api-test-v1
+  annotations:
+    volume.beta.kubernetes.io/storage-class: standard
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo-secret
+type: Opaque
+data:
+  MONGODB_PASSWORD: <put-in-your-base64-enc-pwd>
+  MONGODB_ROOT_PASSWORD: <put-in-your-base64-enc-root-pwd>
+  MONGODB_DB_NAME: <put-in-your-base64-enc-db-name>
+  MONGODB_DB_USER: <put-in-your-base64-enc-usr>
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: rf-example-sys-mongodb
+  name: rf-example-grpc-api-test-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rf-example-sys-mongodb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rf-example-sys-mongodb
+    spec:
+      containers:
+        - env:
+          - name: MONGODB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: MONGODB_DB_USER
+                name: mongo-secret
+          - name: MONGODB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: MONGODB_DB_NAME
+                name: mongo-secret
+          - name: MONGODB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: MONGODB_ROOT_PASSWORD
+                name: mongo-secret
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: MONGODB_PASSWORD
+                name: mongo-secret
+          image: bitnami/mongodb:latest
+          imagePullPolicy: Always
+          name: rf-example-sys-mongodb
+          ports:
+            - containerPort: 27017
+              name: mongodb
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /bitnami
+              name: ebs-mongodb-vol
+      initContainers:
+        - command:
+            - /bin/sh
+            - -c
+            - chown -R 1001:1001 /bitnami
+          image: busybox
+          imagePullPolicy: Always
+          name: rf-example-sys-busybox
+          resources: {}
+          volumeMounts:
+            - mountPath: /bitnami
+              name: ebs-mongodb-vol
+      restartPolicy: Always
+      volumes:
+        - name: ebs-mongodb-vol
+          persistentVolumeClaim:
+            claimName: mongodb-pvc-claim-grpc-api-test-v1
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rf-example-grpc-api-test-v1
+  labels:
+    app: rf-example-sys-mongodb
+spec:
+  ports:
+    - port: 27017
+  selector:
+    app: rf-example-sys-mongodb
+  type: NodePort 

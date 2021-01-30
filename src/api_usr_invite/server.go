@@ -1,4 +1,4 @@
-// Copyright 2020 Team RelicFrog
+// Copyright 2020-2021 Team RelicFrog
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,9 +73,11 @@ type UserInviteCode struct {
 	MetaValidFrom  time.Time          `bson:"meta_valid_from"`
 	MetaValidTo    time.Time          `bson:"meta_valid_to"`
 	CreatedAt      time.Time          `bson:"created_at"`
+	UpdatedAt      time.Time          `bson:"updated_at"`
+	DeletedAt      time.Time          `bson:"deleted_at"`
+	IsUsed         bool               `bson:"is_used"`
 	IsFixture      bool               `bson:"is_fixture"`
 	IsDeleted      bool               `bson:"is_deleted"`
-	IsTest         bool               `bson:"is_test"`
 }
 
 //
@@ -242,8 +244,6 @@ func (u UserInviteCodeServiceServer) GetVersion(_ context.Context, _ *rfpb.Versi
 
 func (u UserInviteCodeServiceServer) CreateInviteCode(_ context.Context, req *rfpb.CreateInviteCodeReq) (*rfpb.CreateInviteCodeRes, error) {
 
-	_handleSimLoadLatency()
-
 	// essentially doing req.GetInviteCode to access the struct with a nil check
 	metaCode := req.GetInviteCode()
 	metaData := UserInviteCode{
@@ -254,7 +254,7 @@ func (u UserInviteCodeServiceServer) CreateInviteCode(_ context.Context, req *rf
 		CreatedAt: time.Now(),
 		IsDeleted: metaCode.GetIsDeleted(),
 		IsFixture: metaCode.GetIsFixture(),
-		IsTest: metaCode.GetIsTest(),
+		IsUsed: metaCode.GetIsUsed(),
 	}
 
 	log.Infof("%s: CreateInviteCode: receive gRPC invite-guid: %s",metaServiceName,metaData.MetaCode)
@@ -274,8 +274,6 @@ func (u UserInviteCodeServiceServer) CreateInviteCode(_ context.Context, req *rf
 }
 
 func (u UserInviteCodeServiceServer) GetInviteCode(_ context.Context, req *rfpb.GetInviteCodeReq) (*rfpb.GetInviteCodeRes, error) {
-
-	_handleSimLoadLatency()
 
 	// convert string id (from proto) to mongoDB ObjectId
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
@@ -300,13 +298,14 @@ func (u UserInviteCodeServiceServer) GetInviteCode(_ context.Context, req *rfpb.
 	// Cast to GetInviteCodeRes type
 	response := &rfpb.GetInviteCodeRes{
 		InviteCode: &rfpb.UserInviteCode{
-			Id:       oid.Hex(),
+			Id: oid.Hex(),
 			MetaCode: metaCode.MetaCode,
 			MetaForAppRole: metaCode.MetaForAppRole,
 			MetaValidFrom: tsMetaValidFrom,
 			MetaValidTo: tsMetaValidTo,
 			CreatedAt: tsMetaCreatedAt,
 			IsFixture: metaCode.IsFixture,
+			IsUsed: metaCode.IsUsed,
 		},
 	}
 
@@ -315,11 +314,9 @@ func (u UserInviteCodeServiceServer) GetInviteCode(_ context.Context, req *rfpb.
 
 func (u UserInviteCodeServiceServer) DeleteInviteCode(_ context.Context, req *rfpb.DeleteInviteCodeReq) (*rfpb.DeleteInviteCodeRes, error) {
 
-	_handleSimLoadLatency()
-
 	oid, err := primitive.ObjectIDFromHex(req.GetId())
 	if err != nil {
-		log.Warnf("%s: mongodb: unable to convert object-id to document-id",metaServiceName)
+		log.Warnf("%s: mongodb: unable to convert object-id (%s) to document-id!",metaServiceName,req.GetId())
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 
@@ -343,24 +340,23 @@ func (u UserInviteCodeServiceServer) DeleteInviteCode(_ context.Context, req *rf
 
 func (u UserInviteCodeServiceServer) UpdateInviteCode(_ context.Context, req *rfpb.UpdateInviteCodeReq) (*rfpb.UpdateInviteCodeRes, error) {
 
-	_handleSimLoadLatency()
-
 	metaCode := req.GetInviteCode()
 	oid, err := primitive.ObjectIDFromHex(metaCode.GetId())
 	if err != nil {
-		log.Warnf("%s: mongodb: unable to convert oid (raw=%s)",metaServiceName,metaCode.GetId())
+		log.Warnf("%s: mongodb: unable to convert oid (raw=%s), object=%v",metaServiceName,metaCode.GetId(),req)
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 
 	res := metaMongoDbCollection.FindOneAndUpdate(metaMongoDbContext,
 		bson.M{"_id": oid, "is_deleted": false},
 		bson.M{"$set": bson.M{
-				"meta_code": metaCode.MetaCode,
-				"meta_for_app_role": metaCode.MetaForAppRole,
-				"meta_valid_from": metaCode.MetaValidFrom.AsTime(),
-				"meta_valid_to": metaCode.MetaValidTo.AsTime(),
-				"updated_at": ptypes.TimestampNow(),
-			}},  options.FindOneAndUpdate().SetReturnDocument(1))
+			"meta_code": metaCode.MetaCode,
+			"meta_for_app_role": metaCode.MetaForAppRole,
+			"meta_valid_from": metaCode.MetaValidFrom.AsTime(),
+			"meta_valid_to": metaCode.MetaValidTo.AsTime(),
+			"is_used": metaCode.IsUsed,
+			"updated_at": time.Now(),
+		}},  options.FindOneAndUpdate().SetReturnDocument(1))
 
 	decoded := UserInviteCode{}
 	err = res.Decode(&decoded)
@@ -371,21 +367,22 @@ func (u UserInviteCodeServiceServer) UpdateInviteCode(_ context.Context, req *rf
 
 	tsMetaValidFrom, _ := ptypes.TimestampProto(decoded.MetaValidFrom)
 	tsMetaValidTo,   _ := ptypes.TimestampProto(decoded.MetaValidTo)
+	tsUpdatedAt,     _ := ptypes.TimestampProto(decoded.UpdatedAt)
 
 	return &rfpb.UpdateInviteCodeRes{
 		InviteCode: &rfpb.UserInviteCode{
-			Id:       		decoded.ID.Hex(),
-			MetaCode: 		decoded.MetaCode,
+			Id: decoded.ID.Hex(),
+			MetaCode: decoded.MetaCode,
 			MetaForAppRole: decoded.MetaForAppRole,
-			MetaValidFrom:  tsMetaValidFrom,
-			MetaValidTo:  	tsMetaValidTo,
+			MetaValidFrom: tsMetaValidFrom,
+			MetaValidTo: tsMetaValidTo,
+			UpdatedAt: tsUpdatedAt,
+			IsUsed: decoded.IsUsed,
 		},
 	}, nil
 }
 
 func (u UserInviteCodeServiceServer) ListInviteCodes(_ *rfpb.ListInviteCodeReq, stream rfpb.UserInviteCodeService_ListInviteCodesServer) error {
-
-	_handleSimLoadLatency()
 
 	data := &UserInviteCode{}
 	cursor, err := metaMongoDbCollection.Find(metaMongoDbContext, bson.M{"is_deleted": false})
@@ -402,14 +399,19 @@ func (u UserInviteCodeServiceServer) ListInviteCodes(_ *rfpb.ListInviteCodeReq, 
 		// prepare some core type variables
 		tsMetaValidFrom, _ := ptypes.TimestampProto(data.MetaValidFrom)
 		tsMetaValidTo,   _ := ptypes.TimestampProto(data.MetaValidTo)
+		tsCreatedAt,     _ := ptypes.TimestampProto(data.CreatedAt)
+		tsUpdatedAt,     _ := ptypes.TimestampProto(data.UpdatedAt)
 		// if no error is found send invite codes via stream
 		_ = stream.Send(&rfpb.ListInviteCodeRes{
 			InviteCode: &rfpb.UserInviteCode{
-				Id:             data.ID.Hex(),
-				MetaCode:       data.MetaCode,
+				Id: data.ID.Hex(),
+				MetaCode: data.MetaCode,
 				MetaForAppRole: data.MetaForAppRole,
-				MetaValidFrom:  tsMetaValidFrom,
-				MetaValidTo:    tsMetaValidTo,
+				MetaValidFrom: tsMetaValidFrom,
+				MetaValidTo: tsMetaValidTo,
+				CreatedAt: tsCreatedAt,
+				UpdatedAt: tsUpdatedAt,
+				IsUsed: data.IsUsed,
 			},
 		})
 	}
@@ -422,8 +424,6 @@ func (u UserInviteCodeServiceServer) ListInviteCodes(_ *rfpb.ListInviteCodeReq, 
 }
 
 func (u UserInviteCodeServiceServer) ListFilteredInviteCodes(req *rfpb.ListFilteredInviteCodeReq, stream rfpb.UserInviteCodeService_ListFilteredInviteCodesServer) error {
-
-	_handleSimLoadLatency()
 
 	data := &UserInviteCode{}
 	cursor, err := metaMongoDbCollection.Find(metaMongoDbContext, _getBSONFilterByRequest(req))
@@ -441,14 +441,18 @@ func (u UserInviteCodeServiceServer) ListFilteredInviteCodes(req *rfpb.ListFilte
 		// prepare some core type variables
 		tsMetaValidFrom, _ := ptypes.TimestampProto(data.MetaValidFrom)
 		tsMetaValidTo,   _ := ptypes.TimestampProto(data.MetaValidTo)
+		tsCreatedAt,     _ := ptypes.TimestampProto(data.CreatedAt)
+		tsUpdatedAt,     _ := ptypes.TimestampProto(data.UpdatedAt)
 		// if no error is found send filter results (invite codes) via stream
 		_ = stream.Send(&rfpb.ListFilteredInviteCodeRes{
 			InviteCode: &rfpb.UserInviteCode{
-				Id:             data.ID.Hex(),
-				MetaCode:       data.MetaCode,
+				Id: data.ID.Hex(),
+				MetaCode: data.MetaCode,
 				MetaForAppRole: data.MetaForAppRole,
-				MetaValidFrom:  tsMetaValidFrom,
-				MetaValidTo:    tsMetaValidTo,
+				MetaValidFrom: tsMetaValidFrom,
+				MetaValidTo: tsMetaValidTo,
+				CreatedAt: tsCreatedAt,
+				UpdatedAt: tsUpdatedAt,
 			},
 		})
 	}

@@ -1,4 +1,4 @@
-// Copyright 2020 Team RelicFrog
+// Copyright 2020-2021 Team RelicFrog
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -153,7 +153,6 @@ func TestRegisterUserInviteCodeServiceServer_CreateInviteCode(t *testing.T) {
 		MetaForAppRole: MetaInviteRole,
 		MetaValidFrom:  tsMetaValidFrom,
 		MetaValidTo:    tsMetaValidTo,
-		IsTest:         true,
 	}
 
 	reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCode }
@@ -186,7 +185,6 @@ func TestRegisterUserInviteCodeServiceServer_UpdateInviteCode(t *testing.T) {
 		MetaForAppRole: MetaInviteRole,
 		MetaValidFrom:  tsMetaValidFrom,
 		MetaValidTo:    tsMetaValidTo,
-		IsTest:         true,
 	}
 
 	reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -205,7 +203,6 @@ func TestRegisterUserInviteCodeServiceServer_UpdateInviteCode(t *testing.T) {
 		MetaForAppRole: MetaNewInviteRole,
 		MetaValidFrom:  tsMetaNewValidFrom,
 		MetaValidTo:    tsMetaNewValidTo,
-		IsTest:         true,
 	}
 
 	reqUpdate := &rfpb.UpdateInviteCodeReq{ InviteCode: &inviteCodeNew }
@@ -238,7 +235,6 @@ func TestRegisterUserInviteCodeServiceServer_GetInviteCode(t *testing.T) {
 		MetaForAppRole: MetaInviteRole,
 		MetaValidFrom:  tsMetaValidFrom,
 		MetaValidTo:    tsMetaValidTo,
-		IsTest:         true,
 	}
 
 	reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -273,7 +269,6 @@ func TestRegisterUserInviteCodeServiceServer_DeleteInviteCode(t *testing.T) {
 		MetaForAppRole: MetaInviteRole,
 		MetaValidFrom:  tsMetaValidFrom,
 		MetaValidTo:    tsMetaValidTo,
-		IsTest:         true,
 	}
 
 	reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -311,7 +306,6 @@ func TestRegisterUserInviteCodeServiceServer_ListInviteCodes(t *testing.T) {
 			MetaForAppRole: MetaInviteRole,
 			MetaValidFrom:  tsMetaValidFrom,
 			MetaValidTo:    tsMetaValidTo,
-			IsTest:         true,
 		}
 
 		reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -364,7 +358,6 @@ func TestRegisterUserInviteCodeServiceServer_ListInviteCodesNilOnDeleted(t *test
 			MetaValidFrom:  tsMetaValidFrom,
 			MetaValidTo:    tsMetaValidTo,
 			DeletedAt:      tsMetaDeletedAt,
-			IsTest:         true,
 			IsDeleted:      true,
 		}
 
@@ -380,12 +373,9 @@ func TestRegisterUserInviteCodeServiceServer_ListInviteCodesNilOnDeleted(t *test
 
 	for {
 
-		res, err := resGetList.Recv()
+		_, err := resGetList.Recv()
 		if err == io.EOF { break }
 		if err != nil { tearDBDown(t); t.Fatal(err) }
-
-		_, err = ulid.ParseStrict(res.GetInviteCode().MetaCode)
-		assert.True(t, err == nil)
 
 		cntInviteCodes++
 	}
@@ -417,7 +407,6 @@ func TestRegisterUserInviteCodeServiceServer_ListFilteredInviteCodesAdmin(t *tes
 			MetaForAppRole: MetaInviteRole,
 			MetaValidFrom:  tsMetaValidFrom,
 			MetaValidTo:    tsMetaValidTo,
-			IsTest:         true,
 		}
 
 		reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -453,7 +442,6 @@ func TestRegisterUserInviteCodeServiceServer_ListFilteredInviteCodesViewer(t *te
 			MetaForAppRole: MetaInviteRole,
 			MetaValidFrom:  tsMetaValidFrom,
 			MetaValidTo:    tsMetaValidTo,
-			IsTest:         true,
 		}
 
 		reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }
@@ -491,7 +479,6 @@ func TestRegisterUserInviteCodeServiceServer_ListFilteredInviteCodesNilOnDeleted
 			MetaValidFrom:  tsMetaValidFrom,
 			MetaValidTo:    tsMetaValidTo,
 			DeletedAt:      tsMetaDeletedAt,
-			IsTest:         true,
 			IsDeleted:      true,
 		}
 
@@ -523,7 +510,6 @@ func TestRegisterUserInviteCodeServiceServer_ListFilteredInviteCodesByGuid(t *te
 		MetaForAppRole: "ninja",
 		MetaValidFrom:  tsMetaValidFrom,
 		MetaValidTo:    tsMetaValidTo,
-		IsTest:         true,
 	}
 
 	reqCreate := &rfpb.CreateInviteCodeReq{ InviteCode: &inviteCodeOrigin }

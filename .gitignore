@@ -61,10 +61,9 @@ data/*
 # ignore all microservice build results + helper sripts
 # --
 /src/api_usr_invite/server
-/src/api_usr_invite/makefile.sec
-/src/api_usr_invite/makefile.token
 /src/api_usr_invite/bin/server
-/src/api_usr_invite/vendor/
+/src/api_usr_role/server
+/src/api_usr_role/bin/server
 
 # ignore IDE related files
 # --
@@ -81,3 +80,6 @@ data/*
 # ignore all gcp credential keys
 # --
 **/credentials.json
+**/makefile.sec
+**/makefile.token
+**/vendor/

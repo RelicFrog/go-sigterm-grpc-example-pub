@@ -1,0 +1,91 @@
+# Copyright 2020 Team RelicFrog
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# *** ALPHA-Code-Definition    ***
+# *** not ready for production ***
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usr_invite_service
+spec:
+  selector:
+    matchLabels:
+      app: usr_invite_service
+  template:
+    metadata:
+      labels:
+        app: usr_invite_service
+    spec:
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: server
+          image: rf-example-grpc-user-invite-code
+          ports:
+            - containerPort: 55001
+          env:
+            - name: PORT
+              value: "55001"
+            - name: DISABLE_STATS
+              value: "0"
+            - name: DISABLE_TRACING
+              value: "1"
+            - name: DISABLE_PROFILER
+              value: "1"
+            - name: DB_MONGO_LNK
+              value: "mongodb://rf-example-sys-mongodb:27017/"
+            - name: DB_MONGO_USR
+              valueFrom:
+                secretKeyRef:
+                  key: MONGODB_DB_USER
+                  name: mongo-secret
+            - name: DB_MONGO_PWD
+                valueFrom:
+                  secretKeyRef:
+                    key: MONGODB_PASSWORD
+                    name: mongo-secret
+            - name: DB_MONGO_PDB
+              valueFrom:
+                secretKeyRef:
+                  key: MONGODB_DB_NAME
+                  name: mongo-secret
+
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:55001"]
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:55001"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: usr_invite_service
+spec:
+  type: ClusterIP
+  selector:
+    app: usr_invite_service
+  ports:
+    - name: grpc
+      port: 55001
+      targetPort: 55001

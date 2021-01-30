@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 #
-# Copyright 2020 Team RelicFrog
+# Copyright 2020-2021 Team RelicFrog
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ SCRIPT_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPT_NAME="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
 
 metaServiceName="user-manager"
-metaServiceCore="aribor"
+metaServiceCore="grpc-example"
 metaMongoDbVersion="4.4.1"
 metaMongoDbLocalTargetPort="27018"
 metaMongoDbLocalTargetSvcName="usermgr-mongo-db-test"

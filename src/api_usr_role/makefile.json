@@ -1,0 +1,12 @@
+{
+  "project": {
+    "name": "api-usr-role",
+    "name_long": "rf-example-api-usr-invite",
+    "namespace": "rf",
+    "description": "this service will provide a gRPC api for handling user roles",
+    "unit": "core",
+    "version": "1.0.0",
+    "packages_req": "jq zip pass docker openssl",
+    "unsupported_os": "WIN32"
+  }
+}

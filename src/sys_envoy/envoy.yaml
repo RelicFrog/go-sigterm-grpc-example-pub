@@ -29,6 +29,10 @@ static_resources:
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
               path: "/dev/stdout"
+              format: "[%START_TIME%] '%RESPONSE_CODE% [%GRPC_STATUS%]' | %REQ(:METHOD)% target=%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% | protocol=%PROTOCOL%, host='%UPSTREAM_HOST%' (authority='%REQ(:AUTHORITY)%') |
+                        bytes_in=%BYTES_RECEIVED% bytes_out=%BYTES_SENT% duration=%DURATION%
+                        response_service_time=%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% ('%REQ(X-FORWARDED-FOR)%')\n'"
+          
           route_config:
             name: local_route
             virtual_hosts:
@@ -45,14 +49,25 @@ static_resources:
                     runtime_key: cors.www.enabled
 
                 routes:
-                  - match: { prefix: /stub/usr-invite-codes }
+                  - match: { prefix: /grpc-user-invite-codes }
                     route:
                       cluster: c_grpc_user_invite_codes
                       max_grpc_timeout: 0s
                       idle_timeout: 15.0s
                       regex_rewrite:
                         pattern:
-                          regex: ^/stub/usr-invite-codes[/]*(.*)$
+                          regex: ^/grpc-user-invite-codes[/]*(.*)$
+                          google_re2: { }
+                        substitution: /\1
+                        
+                  - match: { prefix: /grpc-user-roles }
+                    route:
+                      cluster: c_grpc_user_roles
+                      max_grpc_timeout: 0s
+                      idle_timeout: 15.0s
+                      regex_rewrite:
+                        pattern:
+                          regex: ^/grpc-user-roles[/]*(.*)$
                           google_re2: { }
                         substitution: /\1
 
@@ -81,7 +96,25 @@ static_resources:
       cluster_name: c_grpc_user_invite_codes
       endpoints:
       - lb_endpoints:
-          - endpoint: { address: { socket_address: { address: rf-example-grpc-user-invite-code, port_value: 50051 }}}
+          - endpoint: { address: { socket_address: { address: rf-example-grpc-user-invite-code, port_value: 51051 }}}
+
+  - name: c_grpc_user_roles
+    connect_timeout: 15.0s
+    per_connection_buffer_limit_bytes: 32768
+    type: strict_dns
+    dns_lookup_family: V4_ONLY
+    lb_policy: round_robin
+    upstream_connection_options:
+      tcp_keepalive:
+        keepalive_time: 300
+    http2_protocol_options:
+      initial_stream_window_size: 65536
+      initial_connection_window_size: 1048576
+    load_assignment:
+      cluster_name: c_grpc_user_roles
+      endpoints:
+        - lb_endpoints:
+            - endpoint: { address: { socket_address: { address: rf-example-grpc-user-role, port_value: 51052 }}}
 
 layered_runtime:
   layers:

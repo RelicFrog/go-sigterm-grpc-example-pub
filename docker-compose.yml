@@ -1,7 +1,22 @@
-version: "3.8"
+version: "3.9"
 
 services:
 
+  api_example_proxy_envoy:
+    build: ./src/sys_envoy
+    image: rf-example-sys-envoy:1.0.0
+    container_name: rf-example-sys-envoy
+    ports:
+      - "8081:8080"
+      - "9902:9901"
+    networks:
+      - backend
+      - frontend
+    labels:
+      - "com.aribor.poc.type=proxy"
+      - "com.aribor.poc.category=grpc"
+      - "com.aribor.poc.department=development"
+      
   api_example_user_mongodb:
     image: bitnami/mongodb:4.4.1
     container_name: rf-example-sys-mongodb
@@ -23,9 +38,10 @@ services:
     image: rf-example-grpc-user-invite-code:1.0.0
     container_name: rf-example-grpc-user-invite-code
     ports:
-      - "50051:50051"
+      - "51051:50051"
     depends_on:
       - api_example_user_mongodb
+      - api_example_proxy_envoy
     env_file:
       - src/api_usr_invite/.env
     networks:
@@ -34,33 +50,25 @@ services:
       - "com.aribor.poc.type=api"
       - "com.aribor.poc.category=grpc"
       - "com.aribor.poc.department=dev"
-
-  #
-  # api_example_proxy_envoy:
-  #   image: rf-example-grpc-envoy:1.0.0
-  #   container_name: rf-example-sys-envoy
-  #   ports:
-  #     - "8080:8080"
-  #     - "9901:9901"
-  #   networks:
-  #     - backend
-  #     - frontend
-  #   labels:
-  #     - "com.aribor.poc.type=proxy"
-  #     - "com.aribor.poc.category=grpc"
-  #     - "com.aribor.poc.department=dev"
-  #
-  # api_bastion:
-  #   image: rf-example-sys-bastion:1.0.0
-  #   container_name: rf-example-sys-bastion
-  #   networks:
-  #     - backend
-  #     - frontend
-  #   labels:
-  #     - "com.aribor.poc.type=bastion"
-  #     - "com.aribor.poc.category=ssh"
-  #     - "com.aribor.poc.department=dev "
-
+      -
+  api_example_user_roles:
+    build: ./src/api_usr_role
+    image: rf-example-grpc-user-role:1.0.0
+    container_name: rf-example-grpc-user-role
+    ports:
+      - "51052:50052"
+    depends_on:
+      - api_user_mongodb
+      - api_example_proxy_envoy
+    env_file:
+      - src/api_usr_role/.env
+    networks:
+      - backend
+    labels:
+      - "com.aribor.poc.type=api"
+      - "com.aribor.poc.category=grpc"
+      - "com.aribor.poc.department=development"
+ 
 networks:
   backend:
   frontend:

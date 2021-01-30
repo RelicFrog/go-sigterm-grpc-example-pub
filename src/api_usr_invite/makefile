@@ -6,9 +6,9 @@
 # @info: please configure/setup your makefile.json first!
 # ---------------------------------------------------------------------------------------------------------------------
 # @author: Patrick Paechnatz <post@dunkelfrosch.com>
-# @version: 1.0.0 <alpha>
+# @version: 1.0.1 <alpha>
 # @createdAt: 2020-11-12
-# @updatedAt: 2020-12-06
+# @updatedAt: 2021-01-27
 # ---------------------------------------------------------------------------------------------------------------------
 
 define GetFromConfigByCategory
@@ -202,23 +202,13 @@ clean: makefile-init
 	@-rm bin/$(PROJECT_BUILD_NAME) 2> /dev/null
 	@-$(MAKE) go-clean
 
-##-- [ MONGODB Commands ] --
-
-## Load primary service fixtures
-dbfixtures: makefile-init
-	@@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go run -mod=readonly server.go --load-fixtures
-
-## Generate local mongo-db environments for dev/test
-dbgen: makefile-init
-	@$(shell [[ $(docker ps --filter "name=^/aribor-sys-mongodb-test$" --format '{{.Names}}') == aribor-sys-mongodb-test ]] || docker run -d -p 27018:27017 -e MONGODB_DATABASE=example_user_db --name rf-sys-mongodb-test bitnami/mongodb:4.4.1)
-
 ##-- [ PROTOBUF Commands ] --
 
 ## Generate primary service protobuf structure
 
 pbgen: makefile-init
 	@echo " *** Building protobuff classes"
-	@PATH=$$PATH:$(GOPATH):$(GOBIN) protoc --go_out=plugins=grpc:proto -I ../../pb ../../pb/rf_example.proto
+	@PATH=$$PATH:$(GOPATH):$(GOBIN) protoc --go_out=plugins=grpc:proto -I ../../pb ../../pb/api_usr_invite_code.proto
 
 go-compile: go-get go-build
 

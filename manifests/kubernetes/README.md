@@ -1,0 +1,3 @@
+# kubernetes manifests
+
+:warning: manifests provided in this directory are not directly deployable to a cluster. They are meant to be used with `skaffold` command to insert the correct `image:` tags.
